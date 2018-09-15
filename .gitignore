@@ -1,6 +1,6 @@
 auxillary/gtfs/**/*.zip
 auxillary/gtfs/**/*.txt
-code/conf
+**/conf
 postgresql
 **/__pycache__
 **/__init__.py
