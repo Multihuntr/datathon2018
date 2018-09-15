@@ -18,6 +18,7 @@ done
 popd
 psql --file=../auxillary/gtfs/to_gis.sql --dbname=myki
 psql --file=../auxillary/gtfs/stop_times_calendar.sql --dbname=myki
+psql --file=nearby_stops.sql --dbname=myki
 psql --file=myki_gtfs_correspondence.sql --dbname=myki
 
 psql --file=permissions.sql --dbname=myki

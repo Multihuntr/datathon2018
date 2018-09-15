@@ -90,6 +90,7 @@ def chains_by_card(card):
   Returns:
       list(list((touchon, touchoff))): temporally consecutive legs of journey
   '''
+  global running_stats
   card.sort(key=lambda v: v['ts'])
   chains = []
   chain = []
@@ -106,6 +107,9 @@ def chains_by_card(card):
     elif not (not card[x]['on'] and card[x+1]['on']
         and time_diff(card[x]['ts'], card[x+1]['ts']) < seconds_half_hour):
       if len(chain) > 0:
+        if len(chain) > 1:
+          running_stats['starting_multi_chains'] += 1
+        running_stats['starting_chains'] += 1
         chains.append(chain)
         # New chain
         chain = []
@@ -118,6 +122,7 @@ def chains_by_timing(touches):
   return chains
 
 def chains_by_consecutive_dist(chains):
+  global running_stats
   out_chains = []
   for idx, chain in enumerate(chains):
     print('        {:7d}'.format(idx), end='\r', flush=True)
@@ -125,7 +130,8 @@ def chains_by_consecutive_dist(chains):
     for x in range(len(chain)-1):
       a = chain[x][1]['stop_id']
       b = chain[x+1][0]['stop_id']
-      if db.stop_dist(a, b, 600):
+      if not db.stop_dist(a, b, 600):
+        running_stats['distance_breakages'] += 1
         out_chains.append(chain[start:x+1])
         start = x+1
     out_chains.append(chain[start:])
@@ -138,14 +144,17 @@ def chains_by_matching_trip(chains):
   Args:
       chains (list(list((touchon, touchoff)))): Legs of potential journey
   '''
+  global running_stats
   out_chains = []
   for idx, chain in enumerate(chains):
     print('        {:7d}'.format(idx), end='\r', flush=True)
     new_chain = []
     for x in range(len(chain)):
-      trip_id = a_valid_trip(*chain[x])
+      trip_id, a_seq, b_seq = a_valid_trip(*chain[x])
+      if trip_id is None:
+        running_stats['trip_breakages'] += 1
       if trip_id is not None:
-        new_chain.append((trip_id, *chain[x]))
+        new_chain.append((trip_id, a_seq, b_seq, *chain[x]))
       elif len(new_chain) > 0:
         out_chains.append(new_chain)
     if len(new_chain) > 0:
@@ -160,18 +169,14 @@ def a_valid_trip(touchon, touchoff):
 
   Returns:
       trip_id: a valid trip id given the two transactions
+      touchon_seq: the sequence number of touchon stop in trip
+      touchoff_seq: the sequence number of touchoff stop in trip
   '''
-  trips_on = db.trips_by_stop_time(touchon['stop_id'],  touchon['ts'])
-  if len(trips_on) == 0:
-    return None
-  trip_ids_on, trip_seq_on = zip(*trips_on)
-  trips_off = db.trips_by_stop_time(touchoff['stop_id'], touchoff['ts'])
-  if len(trips_off) == 0:
-    return None
-  for off_id, off_seq in trips_off:
-    if off_id in trip_ids_on and trip_seq_on[trip_ids_on.index(off_id)] < off_seq:
-      return off_id
-  return None
+  hits = db.stops_share_trip(touchon['stop_id'], touchon['ts'],
+          touchoff['stop_id'], touchoff['ts'])
+  if len(hits) > 0:
+    return hits[0]
+  return None, None, None
 
 def load_files(on_file, off_file):
   '''Loads the files from disk as chains of journey legs'''
@@ -182,27 +187,25 @@ def load_files(on_file, off_file):
   chains = chains_by_timing(card_touches)
   chains = chains_by_consecutive_dist(chains)
   chains = chains_by_matching_trip(chains)
-  stats = {
-    'n_on': len(ons),
-    'n_off': len(offs),
-    'n_chains': len(chains)
-  }
-  return chains, stats
+  return chains
 
 def chain_to_rows(chain):
-  return [(leg[0], leg[1]['stop_id'], leg[2]['stop_id'],
-          (leg[2]['ts']-leg[1]['ts']).total_seconds()) for leg in chain]
+  return [(leg[0],
+           leg[3]['stop_id'],
+           leg[4]['stop_id'],
+           leg[1],
+           leg[2],
+           (leg[4]['ts']-leg[3]['ts']).total_seconds()) for leg in chain]
 
 def journey_rows(root):
-  global running_stats
 
   on_fol =  "ScanOnTransaction"
   off_fol = "ScanOffTransaction"
 
-  for sample in range(0, 2):
+  for sample in range(0, 10):
     sample_dir = 'Samp_{:d}'.format(sample)
-    for year in range(2015, 2019):
-      for week in range(1, 54):
+    for year in range(2018, 2019):
+      for week in range(16, 54):
         print('                         Samp_{:d} : {:d}-Week{:d}'.format(sample, year, week), end='\r', flush=True)
         on_dir   = os.path.join(root, sample_dir,  on_fol, str(year), "Week{:d}".format(week))
         off_dir  = os.path.join(root, sample_dir, off_fol, str(year), "Week{:d}".format(week))
@@ -210,9 +213,7 @@ def journey_rows(root):
           continue
         on_file  = os.path.join(on_dir,   os.listdir(on_dir)[0])
         off_file = os.path.join(off_dir, os.listdir(off_dir)[0])
-        chains, stats = load_files(on_file, off_file)
-        for k, v in stats.items():
-          running_stats[k] += v
+        chains = load_files(on_file, off_file)
         for chain in map(chain_to_rows, chains):
           yield chain
 
@@ -226,14 +227,15 @@ if __name__ == '__main__':
   rows = journey_rows(root)
 
   sql_journey = 'INSERT INTO journey VALUES(default) RETURNING journey_id;'
-  sql_leg = 'INSERT INTO journey_leg VALUES(' + ', '.join(['%s']*5) + ');'
+  sql_leg = 'INSERT INTO journey_leg VALUES(' + ', '.join(['%s']*9) + ');'
 
   for idx, row in enumerate(rows):
     print('{:7d}'.format(idx), end='\r', flush=True)
     cur.execute(sql_journey)
     journey_id = cur.fetchone()
-    for leg in row:
-      cur.execute(sql_leg, journey_id+leg)
+    for leg_idx, leg in enumerate(row):
+      first_last = leg_idx == 0 or leg_idx == len(row)-1
+      cur.execute(sql_leg, journey_id+(leg_idx,first_last)+leg)
 
   conn.commit()
   conn.close()

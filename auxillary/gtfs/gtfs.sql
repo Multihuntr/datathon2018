@@ -81,3 +81,4 @@ CREATE TABLE stop_times
   shape_dist_traveled double precision NULL
 );
 CREATE INDEX ON stop_times(stop_id);
+CREATE INDEX ON stop_times(trip_id, stop_sequence);

@@ -54,26 +54,24 @@ def stop_id_matching():
 
 weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
-def trips_by_stop_time(stop_id, stop_time):
-  '''Finds trips based on a stop time and stop id
-
-  Args:
-      stop_id (id): stop_id in question
-      stop_time (datetime.datetime): time to search around
-
-  Returns:
-      list(tuple(trip_id, stop_seq)): the trip and where it appears in the trip
-  '''
-  stop_time_lower = str((stop_time - datetime.timedelta(minutes=5)).time())
-  stop_time_upper = str((stop_time + datetime.timedelta(minutes=5)).time())
-  weekday_str = weekdays[stop_time.weekday()]
-  sql = """SELECT DISTINCT trip_id, stop_sequence
-    FROM stop_times_calendar
-    WHERE stop_id=%s and {:s}=true and departure_time >= %s and departure_time <= %s"""\
-    .format(weekday_str)
-  return fetchsome(sql, (stop_id, stop_time_lower, stop_time_upper))
-
 def stop_dist(a, b, d):
   sql = "SELECT ST_DWithin(a.stop_pos, b.stop_pos, %s, false) FROM stops_gis " \
    + "a inner join stops_gis b on a.stop_id=%s and b.stop_id=%s;"
   return fetchsome(sql, (d,a,b))[0][0]
+
+def stops_share_trip(a_stop_id, a_stop_time, b_stop_id, b_stop_time):
+  a_weekday_str = weekdays[a_stop_time.weekday()]
+  b_weekday_str = weekdays[b_stop_time.weekday()]
+  sql = '''
+    SELECT distinct a.trip_id, a.stop_sequence, b.stop_sequence
+    FROM fuzzy_stop_times a INNER JOIN fuzzy_stop_times b USING(trip_id)
+    WHERE a.stop_sequence<b.stop_sequence AND a.stop_id=%s AND b.stop_id=%s AND
+    a.{:s}=true and a.departure_time >= %s and a.departure_time <= %s AND
+    b.{:s}=true and b.departure_time >= %s and b.departure_time <= %s
+    LIMIT 1;
+  '''.format(a_weekday_str, b_weekday_str)
+  a_lower = str((a_stop_time - datetime.timedelta(minutes=5)).time())
+  a_upper = str((a_stop_time + datetime.timedelta(minutes=5)).time())
+  b_lower = str((b_stop_time - datetime.timedelta(minutes=5)).time())
+  b_upper = str((b_stop_time + datetime.timedelta(minutes=5)).time())
+  return fetchsome(sql, (a_stop_id, b_stop_id, a_lower, a_upper, b_lower, b_upper))
