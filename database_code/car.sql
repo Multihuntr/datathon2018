@@ -8,5 +8,6 @@ CREATE TABLE car(
   mean double precision,
   std double precision
 );
+CREATE INDEX ON car(hour);
 
 GRANT ALL PRIVILEGES ON TABLE car TO loader;

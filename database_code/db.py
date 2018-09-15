@@ -31,14 +31,6 @@ def fetchsome(sql, args):
   cur.close()
   return res
 
-def routes():
-  sql = "SELECT route_id, stop_id, shape_dist_traveled FROM route_stops;"
-  return fetchall(sql)
-
-def intersections():
-  sql = "SELECT route_id1, route_id2, stop_id1, stop_id2, seq_no1, seq_no2 FROM intersections;"
-  return fetchall(sql)
-
 def stop_times():
   sql = "SELECT * FROM stop_times;"
   return fetchall(sql)
@@ -85,9 +77,3 @@ def stop_dist(a, b, d):
   sql = "SELECT ST_DWithin(a.stop_pos, b.stop_pos, %s, false) FROM stops_gis " \
    + "a inner join stops_gis b on a.stop_id=%s and b.stop_id=%s;"
   return fetchsome(sql, (d,a,b))[0][0]
-
-def valid_trip(id, first, second):
-  sql = "SELECT stop_sequence FROM stop_times WHERE stop_id=%s"
-  first_seq = fetchsome(sql, (first,))[0][0]
-  second_seq = fetchsome(sql, (second,))[0][0]
-  return first_seq < second_seq
