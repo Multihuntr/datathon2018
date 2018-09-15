@@ -1,0 +1,60 @@
+._dash-undo-redo {
+  display: none;
+}
+
+html,
+body,
+#react-entry-point,
+#react-entry-point > div,
+#_dash-app-content {
+  height: calc(100% - 7px);
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+h1 {
+  text-align: center;
+  font-family: 'Kosugi Maru', sans-serif;
+  color: white;
+  font-size: 30pt;
+  padding-left: 20px;
+}
+
+#car-speeds-graph {
+  height: calc(100% - 70px);
+  margin-left: -8px;
+  margin-right: -8px;
+  margin-top: 0px;
+  padding-bottom: 10px;
+}
+
+body {
+  background-image: url('/static/bg_plain.svg');
+}
+
+#car-speed-information {
+  margin: 0 0 0 0;
+}
+
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.moderate-text {
+
+  text-align: center;
+  font-size: 25pt;
+  font-family: 'Roboto Light', sans-serif;
+  color: white;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.moderate-text #play-checkbox {
+  font-size: 15pt;
+}
