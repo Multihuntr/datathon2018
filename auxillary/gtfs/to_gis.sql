@@ -20,3 +20,4 @@ CREATE INDEX ON shapes_gis USING gist(shape_pos);
 CREATE TABLE car_gis AS
 SELECT idx, ST_POINT(lon, lat) AS car_pos, hour, mean, std
 FROM car;
+CREATE INDEX ON car_gis USING gist(car_pos);
