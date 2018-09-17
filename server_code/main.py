@@ -5,6 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 import car_speeds
+import journey_dist
 
 
 external_scripts = []
@@ -32,10 +33,12 @@ app = dash.Dash(__name__,
                 external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
-  car_speeds.div()
+  car_speeds.div(),
+  journey_dist.div()
 ], style={'height': '100%'})
 
 car_speeds.callbacks(app)
+journey_dist.callbacks(app)
 
 if __name__ == '__main__':
   app.run_server(debug=True, host='0.0.0.0')
