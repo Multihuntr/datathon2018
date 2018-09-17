@@ -5,3 +5,4 @@ postgresql
 **/__pycache__
 **/__init__.py
 database_code/running_stats.json
+**.pem

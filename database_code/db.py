@@ -70,8 +70,8 @@ def stops_share_trip(a_stop_id, a_stop_time, b_stop_id, b_stop_time):
     b.{:s}=true and b.departure_time >= %s and b.departure_time <= %s
     LIMIT 1;
   '''.format(a_weekday_str, b_weekday_str)
-  a_lower = str((a_stop_time - datetime.timedelta(minutes=5)).time())
-  a_upper = str((a_stop_time + datetime.timedelta(minutes=5)).time())
-  b_lower = str((b_stop_time - datetime.timedelta(minutes=5)).time())
-  b_upper = str((b_stop_time + datetime.timedelta(minutes=5)).time())
+  a_lower = str((a_stop_time - datetime.timedelta(minutes=10)).time())
+  a_upper = str((a_stop_time + datetime.timedelta(minutes=10)).time())
+  b_lower = str((b_stop_time - datetime.timedelta(minutes=10)).time())
+  b_upper = str((b_stop_time + datetime.timedelta(minutes=10)).time())
   return fetchsome(sql, (a_stop_id, b_stop_id, a_lower, a_upper, b_lower, b_upper))

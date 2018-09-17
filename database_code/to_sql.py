@@ -79,6 +79,13 @@ def time_diff(a, b):
 
 seconds_two_hours = 2*60*60
 seconds_half_hour = 0.5*60*60
+def add_chain(chains, chain):
+  global running_stats
+  if len(chain) > 0:
+    if len(chain) > 1:
+      running_stats['starting_multi_chains'] += 1
+    running_stats['starting_chains'] += 1
+    chains.append(chain)
 def chains_by_card(card):
   '''
   Creates a list of chains.
@@ -88,31 +95,37 @@ def chains_by_card(card):
       card (list(touch)): list of touches card has made
 
   Returns:
-      list(list((touchon, touchoff))): temporally consecutive legs of journey
+      list(list((touchon, touchoff))): list of temporally consecutive legs of journey
   '''
-  global running_stats
   card.sort(key=lambda v: v['ts'])
   chains = []
   chain = []
   for x in range(len(card)-1):
-    # If they changed their mind
-    if card[x]['stop_id'] == card[x+1]['stop_id']:
+    # If it's same action, then end the chain
+    if card[x]['on'] == card[x+1]['on']:
+      add_chain(chains, chain)
+      chain = []
       continue
-    # If we have a pair within 2 hours, add it to the chain else,
-    # if it's more than 30 minutes between the current touch and the next
-    # then keep the chain going (assuming it goes off->on for this step)
-    if card[x]['on'] and not card[x+1]['on'] \
-        and time_diff(card[x]['ts'], card[x+1]['ts']) < seconds_two_hours:
+
+    # If we have a pair within 2 hours, add it to the chain
+    on_off = card[x]['on'] and not card[x+1]['on']
+    less_two = time_diff(card[x+1]['ts'], card[x]['ts']) < seconds_two_hours
+    if on_off and less_two:
       chain.append((card[x], card[x+1]))
-    elif not (not card[x]['on'] and card[x+1]['on']
-        and time_diff(card[x]['ts'], card[x+1]['ts']) < seconds_half_hour):
-      if len(chain) > 0:
-        if len(chain) > 1:
-          running_stats['starting_multi_chains'] += 1
-        running_stats['starting_chains'] += 1
-        chains.append(chain)
-        # New chain
-        chain = []
+      continue
+
+    # If it's less than 30 minutes between the current touch and the next
+    # then keep the chain going (assuming it goes off->on for this step)
+    off_on = not card[x]['on'] and card[x+1]['on']
+    less_half = time_diff(card[x+1]['ts'], card[x]['ts']) < seconds_half_hour
+    if off_on and less_half:
+      continue
+
+    # If neither of them, then end the chain
+    add_chain(chains, chain)
+    chain = []
+  # We could end with a chain
+  add_chain(chains, chain)
   return chains
 
 def chains_by_timing(touches):
@@ -157,6 +170,7 @@ def chains_by_matching_trip(chains):
         new_chain.append((trip_id, a_seq, b_seq, *chain[x]))
       elif len(new_chain) > 0:
         out_chains.append(new_chain)
+        new_chain = []
     if len(new_chain) > 0:
       out_chains.append(new_chain)
   return out_chains
@@ -216,6 +230,7 @@ def journey_rows(root):
         chains = load_files(on_file, off_file)
         for chain in map(chain_to_rows, chains):
           yield chain
+
 
 if __name__ == '__main__':
 
