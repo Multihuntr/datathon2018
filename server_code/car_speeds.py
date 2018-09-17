@@ -9,9 +9,7 @@ from plotly import graph_objs as go
 import numpy as np
 
 import db
-
-with open('conf/mapbox', 'r') as f:
-  access_key = f.read().rstrip('\n')
+import mapbox
 
 max_hrs = 24*5
 spds = np.array([db.car_speeds(h) for h in range(max_hrs)])
@@ -37,7 +35,7 @@ def div():
     html.Span([
       html.H1('Car speeds', className='unselectable', style={'float':'left'}),
       html.Div([
-        html.P(id='car-speed-information'),
+        html.H3(id='car-speed-information'),
         dcc.Slider(
           id='car-speeds-slider',
           min=0,
@@ -52,20 +50,8 @@ def div():
         html.Button(id='left-button', className='fas fa-chevron-circle-left fa-sm', style={'float': 'left'}),
         html.Button(id='right-button', className='fas fa-chevron-circle-right fa-sm', style={'float': 'right'})
       ], style={'float': 'right', 'width': '125px', 'padding-right': '10px', 'margin-top': '-30px'})
-    ], className='moderate-text unselectable')
+    ], className='unselectable')
   ], style={'height': '100%'})
-
-default_layout = {
-  'autosize':True,
-  'margin':{'l':0, 'r':0, 't':0, 'b':0},
-  'mapbox':{
-    'accesstoken': access_key,
-    'center': {'lat': np.mean(lat), 'lon': np.mean(lon)},
-    'style': 'dark',
-    'bearing': 0,
-    'zoom': 11
-  }
-}
 
 def callbacks(app):
   @app.callback(
@@ -81,16 +67,7 @@ def callbacks(app):
     [Input('car-speeds-slider', 'value')],
     [State('car-speeds-graph', 'relayoutData')])
   def show_dots(h, prev_layout):
-    layout = copy.deepcopy(default_layout)
-    if prev_layout is not None:
-      if 'mapbox.zoom' in prev_layout:
-        layout['mapbox']['zoom'] = prev_layout['mapbox.zoom']
-      if 'mapbox.bearing' in prev_layout:
-        layout['mapbox']['bearing'] = prev_layout['mapbox.bearing']
-      if 'mapbox.pitch' in prev_layout:
-        layout['mapbox']['pitch'] = prev_layout['mapbox.pitch']
-      if 'mapbox.center' in prev_layout:
-        layout['mapbox']['center'] = prev_layout['mapbox.center']
+    layout = mapbox.layout(prev_layout)
     return {
       'data': [
         go.Scattermapbox(

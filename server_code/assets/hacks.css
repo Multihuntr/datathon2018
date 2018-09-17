@@ -7,7 +7,7 @@ body,
 #react-entry-point,
 #react-entry-point > div,
 #_dash-app-content {
-  height: calc(100% - 7px);
+  height: 100%;
   margin-top: 0;
   margin-bottom: 0;
 }
@@ -16,16 +16,32 @@ h1 {
   text-align: center;
   font-family: 'Kosugi Maru', sans-serif;
   color: white;
-  font-size: 30pt;
+  font-size: 27pt;
   padding-left: 20px;
+  margin-top: 8px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+h3 {
+  text-align: center;
+  font-family: 'Roboto Light', sans-serif;
+  color: white;
+  font-size: 15pt;
+}
+
+#car-speeds-graph, #journey-dist-graph {
+  margin-left: -8px;
+  margin-right: -8px;
+  margin-top: 0px;
 }
 
 #car-speeds-graph {
   height: calc(100% - 70px);
-  margin-left: -8px;
-  margin-right: -8px;
-  margin-top: 0px;
-  padding-bottom: 10px;
+}
+
+#journey-dist-graph {
+  height: calc(100% - 50px);
 }
 
 body {
@@ -34,6 +50,13 @@ body {
 
 #car-speed-information {
   margin: 0 0 0 0;
+}
+
+#journey-selected-stops {
+  width: calc(100% - 800px);
+  margin-left: 432px;
+  margin-right: -8px;
+  padding-top: 7px;
 }
 
 .unselectable {
@@ -45,8 +68,7 @@ body {
   user-select: none;
 }
 
-.moderate-text {
-
+h2 {
   text-align: center;
   font-size: 25pt;
   font-family: 'Roboto Light', sans-serif;
@@ -57,4 +79,8 @@ body {
 
 .moderate-text #play-checkbox {
   font-size: 15pt;
+}
+
+.Select-control {
+  border-radius: 15px;
 }

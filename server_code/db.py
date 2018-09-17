@@ -30,11 +30,15 @@ def car_speeds(hour):
   return fetchsome(sql, (hour,))
 
 def stops():
-  sql = 'SELECT stop_id, stop_lat, stop_lon FROM stops;'
+  sql = 'SELECT stop_id, stop_name, stop_lat, stop_lon FROM stops;'
   return fetchall(sql)
 
 def journey_trips(sql, stop_id):
   return fetchsome(sql, (stop_id, stop_id))
+
+def nearby_stops(stop_id):
+  sql = 'SELECT b_id FROM nearby_stops WHERE a_id=%s'
+  return [x[0] for x in fetchsome(sql, (stop_id,))]
 
 def trip_stops(cur, sql, args):
   cur.execute(sql, args)
@@ -61,12 +65,12 @@ def journeys_about(stop_id):
   journey = []
   for journey_id, leg_seq, trip_id, start_stop_id, end_stop_id, start_seq, stop_seq, leg_time in trips:
     if journey_id != prev_journey_id and prev_journey_id is not None:
-      yield journey
+      yield journey_id, journey
       journey = []
     # Get stops for this journey
     stops = trip_stops(cur, sql_stops, (trip_id, start_seq, stop_seq))
     journey.append((trip_id, leg_time, stops))
     prev_journey_id = journey_id
-  yield journey
+  yield journey_id, journey
 
 
